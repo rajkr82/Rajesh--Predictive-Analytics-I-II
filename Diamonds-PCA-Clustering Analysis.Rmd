@@ -1,0 +1,304 @@
+---
+title: "Diamond -PCA"
+output:
+  html_document: default
+  pdf_document: default
+Author: Rajesh-rajkr82@gmail.com
+---
+DIAMOND data set:- 
+
+A data frame with 53940 rows and 10 variables:
+
+price-price in US dollars (\$326–\$18,823)
+carat-weight of the diamond (0.2–5.01)
+cut-quality of the cut (Fair, Good, Very Good, Premium, Ideal)
+color-diamond colour, from J (worst) to D (best)
+clarity-a measurement of how clear the diamond is (I1 (worst), SI2, SI1, VS2, VS1, VVS2, VVS1, IF (best))
+x-length in mm (0–10.74)
+y-width in mm (0–58.9)
+z-depth in mm (0–31.8)
+depth-total depth percentage = z / mean(x, y) = 2 * z / (x + y) (43–79)
+table-width of top of diamond relative to widest point (43–95)
+
+```{r cars}
+setwd("F:\\R Programming\\Working Directory\\PCA practice")
+R.diamond<- read.csv("diamonds.csv")
+head(R.diamond)
+str(R.diamond)
+summary(R.diamond)
+dim(R.diamond)
+```
+
+
+```{r}
+require(caTools)
+set.seed(3) #setting randomaization to 3 will pick every 3 dataset from the lot. 
+sample = sample.split(R.diamond, SplitRatio=0.75) # Spiltting the dataset to 75%.
+train.dia = subset(R.diamond, sample==TRUE)#sample randomzing so making as true. True is alloted to Train
+test.dia = subset(R.diamond, sample==FALSE)#False is alloted to test
+
+head (sample)# head will give first 7 rows
+head (train.dia)
+head (test.dia)
+
+nrow(train.dia) #No. of rows
+nrow(test.dia)
+```
+#########rajkr82#########
+prcomp returns a list with class "prcomp" containing the following components:
+
+sdev	
+the standard deviations of the principal components (i.e., the square roots of the eigenvalues of the covariance/correlation matrix, though the calculation is actually done with the singular values of the data matrix).
+
+rotation	
+the matrix of variable loadings (i.e., a matrix whose columns contain the eigenvectors). The function princomp returns this in the element loadings.
+
+x	
+if retx is true the value of the rotated data (the centred (and scaled if requested) data multiplied by the rotation matrix) is returned. Hence, cov(x) is the diagonal matrix diag(sdev^2). For the formula method, napredict() is applied to handle the treatment of values omitted by the na.action.
+
+center, scale	
+the centering and scaling used, or FALSE.
+
+```{r}
+##########PCA analysis is done here##########
+
+PCA.diamond = prcomp(train.dia[ ,c(-1,-3,-4,-5)], center = TRUE,scale. = TRUE)
+
+print("Print PCA.diamond") 
+
+PCA.diamond
+
+print("Print Summary PCA.diamond")
+
+summary(PCA.diamond)# Here have a look at the cumulative percentage
+
+print("Print Structure PCA.diamond")
+
+str(PCA.diamond)
+```
+####rajkr82########
+FactoMineR: Multivariate Exploratory Data Analysis and Data Mining
+
+Exploratory data analysis methods to summarize, visualize and describe datasets. The main principal component methods are available, those with the largest potential in terms of applications: principal component analysis (PCA) when variables are quantitative, correspondence analysis (CA) and multiple correspondence analysis (MCA) when variables are categorical, Multiple Factor Analysis when variables are structured in groups, etc. and hierarchical cluster analysis.
+
+```{r}
+#Finding the PCA using Facto miner
+
+library(FactoMineR)
+PCA.factminor=PCA(R.diamond[,c(-1,-3,-4,-5)])
+
+print("Print Eigen values")
+PCA.factminor$eig #the eig values give the cumulative % of the data covered 
+
+#Extract the eigenvalues/variances of the principal dimensions. fviz_eig() (or fviz_screeplot()): Plot the eigenvalues/variances against the number of dimensions.
+
+library(factoextra)
+fviz_screeplot(PCA.factminor) # function for Screeplot
+
+
+```
+
+```{r}
+#rajkr82-covariance identified for the train dataset and excluding the columns 1 & from 3 till 5
+
+print("Print covariance among the variables")
+R.cor.train = cor(train.dia[ ,c(-1,-3,-4,-5)])
+R.cor.train
+
+library(corrplot)#rajkr82- Correlation between Variables# Price Positively correlated with Carat length Width & #Depth
+corrplot(R.cor.train, method = "number")
+```
+#rajkr82-Shows the attributes of the PCA.diamond
+
+#rajkr82# center and scale refers to respective mean and standard deviation of the variables that are used for normalization prior to implementing PCA
+
+```{r}
+#printing the attributes 
+
+print("printing the attributes ")
+
+attributes(PCA.diamond)
+
+print("attributes of $sdev")
+PCA.diamond$sdev
+
+print("attributes of $centre")
+PCA.diamond$center
+
+print("attributes of $scale")
+PCA.diamond$scale
+```
+#rajkr82:- SPLOM, Histograms And Correlations For A Data Matrix
+Adapted from the help page for pairs, pairs.panels shows a scatter plot of matrices (SPLOM), with bivariate scatter plots below the diagonal, histograms on the diagonal, and the Pearson correlation above the diagonal. Useful for descriptive statistics. Correlation ellipses are also shown. Points may be given different colors depending upon some grouping variable. 
+```{r}
+library(psych)
+#orthagonality of PCA's
+#here we are finding the corelation to see how many points are falling into the circle. 
+
+#pairs.panels(PCA.diamond$x,bg=c("red","yellow","blue")[train$cut],
+#pch=21,main="Diamond data by cut")# Center is the mid point in the X-Y axis to decide where the ellipses falls in the four quardrants.
+#plotting Biplot for PCA
+#biplot(PCA.diamond)
+#plotting 2D & 3D plot for PCA
+#pca2d(PCA.diamond)
+library(pca3d)
+pca3d(PCA.diamond)
+#pca2d(PCA.diamond, biplot=TRUE, biplot.vars=3)
+#pca3d(PCA.diamond, fancy=TRUE)
+
+```
+
+```{r}
+#now predection is done using Train dataset
+PredictTrain <- predict(PCA.diamond, train.dia)
+print("Printing summary of predictraindiamond")
+summary(PredictTrain)# Here we see the Box plot values of PC1 till PC7
+PredictTrain = data.frame(PredictTrain, train.dia[3])# Train dataset cut is the 3rd column.
+
+```
+
+```{r}
+#predicting using the test data set
+PredictTestdiamond = predict(PCA.diamond, test.dia)
+print("Printing summary of PredictTest")
+summary(PredictTestdiamond)
+PredictTestdiamond = data.frame(PredictTestdiamond, test.dia[3])# Test dataset cut is the 3rd column.
+```
+relevel()- The levels of a factor are re-ordered so that the level specified by ref is first and the others are moved down.
+ My main motive is to predict cut which is dependent variable from independent variables which is PC1 till PC3
+Multinomial logistic regression works like a series of logistic regressions, our case where you only have values where cut has 5 categories.
+```{r}
+
+library(nnet)#I want to use the multinomial logistic regression in nnet package. The Cut outcome has 5 factors 
+PredictTrain$cut= relevel(PredictTrain$cut, ref = "Fair")#since Fair class didn't appear in the output, it means that it was treated as base being the first one in alphabetical order as expected when dealing with factor variables in R.
+mytrainmodel = multinom(cut~ PC1 + PC2, data=PredictTrain)# Considered till PC2.
+print("Printing summary of my model")
+summary(mytrainmodel)
+```
+
+```{r}
+##Confusion MAtrix , Accuracy, Sensitivity & Specificity for Train dataset#######
+pot1 = predict(mytrainmodel, PredictTrain)
+library(caret)
+confusionMatrix(pot1, PredictTrain$cut)
+```
+
+```{r}
+#Confusion matrix & misclassification error for Training set###
+
+pot1 = predict(mytrainmodel, PredictTrain)
+tab12 = table(pot1, PredictTrain$cut)
+tab12
+print("Printing error % for  predictTrain")
+1 - sum(diag(tab12))/sum(tab12)
+
+
+```
+
+
+
+
+Each row of the matrix corresponds to a predicted class.
+Each column of the matrix corresponds to an actual class.
+```{r}
+##Confusion MAtrix , Accuracy, Sensitivity & Specificity for Test dataset####
+
+pot2 = predict(mytrainmodel, PredictTestdiamond)
+confusionMatrix(pot2, PredictTestdiamond$cut)
+
+```
+
+```{r}
+#####
+#confusion matrix & misclassification error - Testing
+
+pot2 = predict(mytrainmodel, PredictTestdiamond)
+tab21 = table(pot2, PredictTestdiamond$cut)
+tab21
+print("Printing error % for  predictTest")
+1 - sum(diag(tab21))/sum(tab21)
+
+
+```
+
+
+
+```{r}
+plot(price ~ cut,R.diamond)
+with(R.diamond,text(price ~ cut, labels=cut, pos = 4, cex =0.8, col = price))# Pos is position, CEX is font Size
+```
+scale , with default settings, will calculate the mean and standard deviation of the entire vector, then "scale" each element by those values by subtracting the mean and dividing by the sd.
+
+apply():- They act on an input list, matrix or array and apply a named function with one or several optional arguments.
+The called function could be:
+1.An aggregating function, like for example the mean, or the sum (that return a number or scalar);
+2.Other transforming or subsetting functions; and
+3.Other vectorized functions, which yield more complex structures like lists, vectors, matrices, and arrays.
+```{r}
+# Normalisation
+z3 <- R.diamond[ 1:10,c(-1,-3,-4,-5)]# Remove the unwanted columns.Due to memomory Size error msg. i have taken only 10 rows from R.diamond.
+mn = apply(z3,2,mean)## mean for the variable z3 and 2 indicates column as per apply function
+print("Mean")
+mn
+stddev <- apply(z3,2,sd)# Stdev for the variable z3 and 2 indicates column as per apply function
+print("Stddev")
+stddev
+print("Scale of Z3")
+z3 <-  scale(z3,mn,stddev)
+z3
+```
+
+```{r}
+#Calculate the Euclidian distance
+distance <-dist(z3)# Since only 10 rows are taken into consideration
+print(distance)
+
+```
+A dendrogram is a diagram that shows the hierarchical relationship between objects. It is most commonly created as an output from hierarchical clustering. The main use of a dendrogram is to work out the best way to allocate objects to clusters.
+
+Hierarchical Cluster Analysis. ... The hclust function in R uses the complete linkage method for hierarchical clustering by default. This particular clustering method defines the cluster distance between two clusters to be the maximum distance between their individual components.
+
+```{r}
+#cluster Dendrogram with complex Linkage
+
+hc1 <-hclust(distance)
+plot(hc1,labels = R.diamond$Cut, col = R.diamond$price)
+plot(hc1,hang = 1,labels = R.diamond$Cut)
+
+```
+In Average linkage clustering, the distance between two clusters is defined as the average of distances between all pairs of objects, where each pair is made up of one object from each group. 
+
+```{r}
+#cluster Dendrogram with Average Linkage
+hc.a1 = hclust(distance,method = "average")
+plot(hc.a1,labels = R.diamond$Cut,hang = 1)
+
+```
+Table function in R -table(), performs categorical tabulation of data with the variable and its frequency. Table() function is also helpful in creating Frequency tables with condition and cross tabulations.
+```{r}
+#Cluster membership
+member.c1 <- cutree(hc1,3)# compressing to 3 clusters.Here hc1 is the complete linkage
+member.a1 <- cutree(hc.a1,3)# here hc.a1 is average linkage
+table(member.c1,member.a1)# Here the table show it belongs to which cluster.
+```
+```{r}
+#Cluster means
+aggregate(z3,list(member.c1),mean)# New Z3 variable u are find mean in member.c
+aggregate(R.diamond[ 1:10,c(-1,-3,-4,-5)],list(member.c1),mean)# Here u aggregating the entire R.diamond dataset with member.c1
+```
+The silhouette plot displays a measure of how close each point in one cluster is to points in the neighboring clusters.
+```{r}
+#Silhouette Plot
+library(cluster)
+plot(silhouette(cutree(hc1,3),distance))
+```
+
+# Non Hiearcheal Clustering
+```{r}
+z2 <- R.diamond[ ,c(-1,-3,-4,-5)]
+kclus<-kmeans(z2,8)
+kclus
+plot(price~ cut,R.diamond,col= kclus$cluster)
+
+```
+
